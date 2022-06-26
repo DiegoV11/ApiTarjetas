@@ -3,6 +3,7 @@ package com.example.tarjetaservice.controller;
 import com.example.tarjetaservice.Repository.TarjetaRepository;
 import com.example.tarjetaservice.entity.Tarjeta;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.stereotype.Controller;
@@ -11,12 +12,76 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
 public class TarjetaController {
     @Autowired
     TarjetaRepository tarjetaRepository;
+
+
+    @GetMapping("/tarjeta")
+    public List<Tarjeta> listaTarjetas(){
+        return  tarjetaRepository.findAll();
+    }
+
+
+    @GetMapping("/tarjeta/{id}")
+    public ResponseEntity<HashMap<String,Object>> obtenerTarjetaPorId(@PathVariable("id")String idStr){
+        HashMap<String,Object> responseJson = new HashMap<>();
+        try {
+            Optional<Tarjeta> optionalTarjeta = tarjetaRepository.findById(Integer.parseInt(idStr));
+            if(optionalTarjeta.isPresent()){
+                responseJson.put("result","success");
+                responseJson.put("tarjeta",optionalTarjeta.get());
+                return ResponseEntity.ok(responseJson);
+            }else{
+                responseJson.put("msg","Tarjeta no encontrada");
+            }
+        }catch (NumberFormatException e){
+            responseJson.put("msg","El id debe ser un número entero positivo");
+        }
+        responseJson.put("result","failure");
+        return ResponseEntity.badRequest().body(responseJson);
+    }
+
+    @PostMapping("/tarjeta")
+    public ResponseEntity<HashMap<String,Object>> guardarTarjeta(
+            @RequestBody Tarjeta tarjeta){
+        HashMap<String,Object> responseMap = new HashMap<>();
+
+        tarjetaRepository.save(tarjeta);
+        responseMap.put("estado","creado");
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseMap);
+    }
+
+    @PutMapping(value = "/tarjeta")
+    public ResponseEntity<HashMap<String,Object>> actualizarTarjeta(@RequestBody Tarjeta tarjeta){
+        HashMap<String, Object> responseMap = new HashMap<>();
+
+        if (tarjeta.getId() != null && tarjeta.getId()>0){
+            Optional<Tarjeta> opt = tarjetaRepository.findById(tarjeta.getId());
+            if (opt.isPresent()){
+                tarjetaRepository.save(tarjeta);
+                responseMap.put("estado","actualizado");
+                return ResponseEntity.ok(responseMap);
+            }else {
+                responseMap.put("estado","error");
+                responseMap.put("msg","La tarjeta a actualizar no existe");
+                return ResponseEntity.badRequest().body(responseMap);
+            }
+        }else{
+            responseMap.put("estado","error");
+            responseMap.put("msg","Debe enviar un ID");
+            return ResponseEntity.badRequest().body(responseMap);
+        }
+
+    }
+
+
+
 
     @PostMapping("/verificacion")
     public ResponseEntity<HashMap<String, Object>> verificationCard(@RequestBody Tarjeta tarjeta){
