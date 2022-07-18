@@ -50,11 +50,17 @@ public class TarjetaController {
     public ResponseEntity<HashMap<String,Object>> guardarTarjeta(
             @RequestBody Tarjeta tarjeta){
         HashMap<String,Object> responseMap = new HashMap<>();
-
-        tarjetaRepository.save(tarjeta);
-        responseMap.put("estado","creado");
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseMap);
+        System.out.println();
+        Boolean condicion = tarjeta.getVerificacion()==3 && tarjeta.getNumero().length()==12;
+        if (condicion){
+            tarjetaRepository.save(tarjeta);
+            responseMap.put("estado","creado");
+            return ResponseEntity.status(HttpStatus.CREATED).body(responseMap);
+        }else {
+            responseMap.put("estado","error");
+            responseMap.put("msg","Datos incorrectos");
+            return ResponseEntity.badRequest().body(responseMap);
+        }
     }
 
     @PutMapping(value = "/tarjeta")
